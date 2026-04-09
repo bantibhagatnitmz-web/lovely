@@ -1,5 +1,3 @@
-import { heicTo } from 'heic-to';
-
 export interface NormalizedPhotoBlob {
   blob: Blob;
   fileName: string;
@@ -66,6 +64,8 @@ function replaceFileExtension(fileName: string, nextExtension: string): string {
 
 async function convertHeicBlob(blob: Blob): Promise<Blob> {
   try {
+    // Lazy-load HEIC conversion code so normal gallery browsing has a smaller initial bundle.
+    const { heicTo } = await import('heic-to');
     const convertedBlob = await heicTo({
       blob,
       type: 'image/jpeg',
