@@ -94,7 +94,8 @@ using (
 insert into public.gallery_members (email, role)
 values
   ('bantinitmz@gmail.com', 'owner'),
-  ('demo22ankita@gmail.com', 'viewer'),
-  ('kumarbanti007@gmail.com', 'viewer')
+  ('demo22ankita@gmail.com', 'owner'),
+  ('kumarbanti007@gmail.com', 'viewer'),
+  ('bhagatnitmz@gmail.com', 'viewer')
 on conflict (email) do update
 set role = excluded.role;
