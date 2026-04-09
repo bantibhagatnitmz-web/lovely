@@ -14,6 +14,27 @@
   color: var(--text);
 }
 
+@keyframes gentleFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes softPulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(198, 65, 114, 0);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(198, 65, 114, 0.2);
+  }
+}
+
 .page-shell {
   min-height: 100vh;
   background:
@@ -35,6 +56,7 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 247, 245, 0.9)),
     var(--surface);
   box-shadow: var(--shadow);
+  animation: gentleFadeUp 420ms ease both;
 }
 
 .hero-card,
@@ -216,6 +238,7 @@ h3 {
 .secondary-button {
   padding: 0.95rem 1.3rem;
   font-weight: 800;
+  will-change: transform;
 }
 
 .primary-button {
@@ -230,6 +253,10 @@ h3 {
 .switch-button:hover,
 .gallery-card:hover {
   transform: translateY(-2px);
+}
+
+.primary-button:hover {
+  animation: softPulseGlow 1.2s ease-in-out;
 }
 
 .primary-button:disabled,
@@ -426,6 +453,12 @@ h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 260ms ease, filter 260ms ease;
+}
+
+.gallery-image:hover img {
+  transform: scale(1.04);
+  filter: saturate(1.05);
 }
 
 .preview-card p {
@@ -493,6 +526,10 @@ h3 {
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 246, 244, 0.9)),
     rgba(255, 255, 255, 0.84);
   box-shadow: 0 18px 38px rgba(67, 24, 39, 0.08);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
 }
 
 .gallery-card-wide {
@@ -587,6 +624,7 @@ h3 {
   display: grid;
   gap: 1rem;
   padding: 1rem;
+  animation: gentleFadeUp 260ms ease both;
 }
 
 .lightbox-close {
@@ -674,6 +712,7 @@ h3 {
   box-shadow:
     0 20px 44px rgba(100, 28, 53, 0.12),
     0 1px 0 rgba(255, 255, 255, 0.75) inset;
+  transition: box-shadow 220ms ease, transform 220ms ease;
 }
 
 .owner-premium-note {
@@ -727,6 +766,7 @@ h3 {
 }
 
 .gallery-section-owner .gallery-card:hover {
+  transform: translateY(-3px);
   box-shadow: 0 22px 44px rgba(88, 27, 48, 0.15);
 }
 
@@ -769,6 +809,7 @@ h3 {
   box-shadow:
     0 24px 48px rgba(77, 28, 49, 0.12),
     0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  transition: box-shadow 220ms ease, transform 220ms ease;
 }
 
 .dashboard-card-viewer::before {
@@ -836,6 +877,36 @@ h3 {
 .gallery-section-viewer .gallery-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 22px 44px rgba(77, 28, 49, 0.14);
+}
+
+.dashboard-card:hover,
+.dashboard-card-viewer:hover {
+  transform: translateY(-2px);
+}
+
+.gallery-grid .gallery-card:nth-child(2n) {
+  animation-delay: 50ms;
+}
+
+.gallery-grid .gallery-card:nth-child(3n) {
+  animation-delay: 90ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .lightbox-card,
+  .gallery-card,
+  .primary-button,
+  .secondary-button,
+  .switch-button,
+  .preview-frame img,
+  .gallery-image img,
+  .lightbox-image img,
+  .dashboard-card,
+  .dashboard-card-viewer {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .gallery-section-viewer .gallery-image {
