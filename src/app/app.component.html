@@ -9,8 +9,8 @@
         <p class="eyebrow">Lovely Private Vault</p>
         <h1>Banti ❤ Ankita</h1>
         <p class="hero-copy">
-          A premium private love gallery crafted for your memories, your moments, and your story.
-          Every photo is protected, elegant, and made to feel timeless.
+          In every photo, I find your smile. In every memory, I find my forever.
+          This is our little world of love, where every moment with you feels magical and eternal.
         </p>
         <div class="hero-tags">
           <span>Private by design</span>
@@ -23,8 +23,8 @@
         <p class="eyebrow">Our Beginning</p>
         <h3>First met on 14 Feb 2026</h3>
         <p>
-          Built with love by <strong>Banti Kumar Bhagat</strong> for
-          <strong>Ankita Mahana</strong>, this space keeps your special memories close to heart.
+          Made with endless love by <strong>Banti Kumar Bhagat</strong> for
+          <strong>Ankita Mahana</strong> - a forever corner where our sweetest memories never fade.
         </p>
       </div>
     </section>
@@ -139,8 +139,8 @@
     } @else {
       <section class="panel dashboard-card" [class.dashboard-card-viewer]="!isOwner()">
         <div class="dashboard-copy">
-          <p class="eyebrow">{{ isOwner() ? 'Creator Lounge' : 'Viewer Lounge' }}</p>
-          <h2>{{ isOwner() ? 'Curate your love story' : 'Experience your love story' }}</h2>
+          <p class="eyebrow">{{ isOwner() ? 'Love Keeper' : 'My Love Ankita' }}</p>
+          <h2>{{ isOwner() ? 'Curate our love story' : 'Relive our love story' }}</h2>
           <p>Welcome back, {{ currentUser()?.email }}</p>
           @if (isOwner()) {
             <div class="owner-premium-note">
@@ -150,7 +150,7 @@
           } @else {
             <div class="viewer-premium-note">
               <span class="viewer-star">✦</span>
-              <span>Premium viewer lounge enabled</span>
+              <span>Romantic memory mode</span>
             </div>
           }
         </div>
@@ -171,8 +171,9 @@
       <section class="panel memory-banner">
         <p class="eyebrow">Love Note</p>
         <h3>
-          "From the first hello on 14 Feb 2026 to forever - every memory here is a heartbeat
-          of us."
+          "Five years brought us close, but 14 Feb 2026 at your flat made you my forever.
+          Since that moment, every beat of my heart, every prayer I whisper, and every dream
+          I hold begins and ends with you, Ankita."
         </h3>
       </section>
 
@@ -270,9 +271,9 @@
         <div class="gallery-header">
           <div>
             <p class="eyebrow">Romantic Collection</p>
-            <h2>{{ isOwner() ? 'Your curated memory wall' : 'Ankita\'s romantic memory wall' }}</h2>
+            <h2>{{ isOwner() ? 'Our forever memory wall' : 'Our forever memory wall' }}</h2>
           </div>
-          <p class="section-note">Tap any memory to open the cinematic view.</p>
+          <p class="section-note">Tap any memory and relive the love in full view.</p>
         </div>
 
         @if (photos().length) {
