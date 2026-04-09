@@ -284,13 +284,11 @@
                 [class.gallery-card-featured]="index % 6 === 0"
               >
                 <button class="gallery-image" type="button" (click)="openPhoto(photo.id)">
-                  <img [src]="photo.src" [alt]="photo.caption || photo.fileName" />
+                  <img [src]="photo.src" [alt]="formatPhotoTitle(photo)" />
                 </button>
 
                 <div class="gallery-copy">
-                  <p class="gallery-date">{{ photo.addedAt | date: 'mediumDate' }}</p>
-                  <h3>{{ photo.caption || photo.fileName }}</h3>
-                  <p>{{ photo.caption || 'Private photo stored in the cloud gallery.' }}</p>
+                  <p class="gallery-caption">{{ getPhotoCaption(photo) }}</p>
 
                   @if (isOwner()) {
                     <div class="gallery-actions">
@@ -343,13 +341,11 @@
         </button>
 
         <div class="lightbox-image">
-          <img [src]="photo.src" [alt]="photo.caption || photo.fileName" />
+          <img [src]="photo.src" [alt]="formatPhotoTitle(photo)" />
         </div>
 
         <div class="lightbox-copy">
-          <p class="gallery-date">{{ photo.addedAt | date: 'fullDate' }}</p>
-          <h3>{{ photo.caption || photo.fileName }}</h3>
-          <p>{{ photo.caption || 'Private photo stored in the cloud gallery.' }}</p>
+          <p class="gallery-caption">{{ getPhotoCaption(photo) }}</p>
         </div>
       </div>
     </div>

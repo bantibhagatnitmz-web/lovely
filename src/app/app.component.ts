@@ -267,6 +267,59 @@ export class AppComponent implements OnDestroy {
     this.selectedPhotoId.set(null);
   }
 
+  private romanticCaptions = [
+    '✨ Every moment with you feels like a beautiful dream I never want to wake from.',
+    '💕 You are my favorite hello and my hardest goodbye.',
+    '🌹 In your smile, I found my home, my peace, and my forever.',
+    '💫 When I look into your eyes, I see our entire future written in the stars.',
+    '❤️ With you, I have found my greatest love and my truest friend.',
+    '🌸 You make my heart skip a beat every single day.',
+    '💖 My heart chose you before my mind could catch up.',
+    '✨ You are the answer to every prayer I never knew I was praying.',
+    '🎀 Every frame captures a moment of pure magic with you.',
+    '💝 You are my today and all of my tomorrows.',
+    '🌙 Even the stars are jealous of how beautifully we shine together.',
+    '🦋 You make me believe in love at first sight, every single time.',
+    '💐 Being with you is like finding a piece of my soul I didn\'t know was missing.',
+    '✨ You\'re not just my love, you\'re my adventure, my peace, my home.',
+    '❤️‍🔥 Forever feels like the right amount of time to love someone like you.',
+    '🌺 In this moment, with you, I found everything I\'ve been searching for.',
+    '💕 Your love has made me the happiest version of myself.',
+    '🌟 You are my greatest blessing and my sweetest dream come true.',
+    '🎆 Together, we create magic that the world has never seen before.',
+    '💘 I fall in love with you more and more with each passing day.'
+  ];
+
+  formatPhotoTitle(photo: GalleryPhoto): string {
+    const caption = photo.caption.trim();
+
+    if (caption) {
+      return caption;
+    }
+
+    const withoutExtension = photo.fileName.replace(/\.[^.]+$/, '');
+    const normalized = withoutExtension
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!normalized) {
+      return 'Our special memory';
+    }
+
+    return normalized.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  getPhotoCaption(photo: GalleryPhoto): string {
+    // Use photo ID or index to consistently assign romantic captions
+    const photoId = photo.id;
+    const hashCode = photoId.split('').reduce((acc, char) => {
+      return ((acc << 5) - acc) + char.charCodeAt(0);
+    }, 0);
+    const index = Math.abs(hashCode) % this.romanticCaptions.length;
+    return this.romanticCaptions[index];
+  }
+
   private looksLikeImage(file: File): boolean {
     return looksLikeImageFile(file.name, file.type);
   }
