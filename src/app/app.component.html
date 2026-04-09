@@ -1,16 +1,31 @@
-<div class="page-shell" [class.page-shell-owner]="isOwner()">
+<div
+  class="page-shell"
+  [class.page-shell-owner]="isOwner()"
+  [class.page-shell-viewer]="!!currentUser() && !isOwner()"
+>
   <main class="page">
     <section class="panel hero-card">
-      <p class="eyebrow">Private Cloud Gallery</p>
-      <h1>Ankita's private gallery</h1>
-      <p class="hero-copy">
-        A private cloud gallery with real login, owner uploads, viewer-only access,
-        and photos stored in a private bucket.
-      </p>
-      <div class="hero-tags">
-        <span>Owner uploads</span>
-        <span>Viewer can only browse</span>
-        <span>Private cloud storage</span>
+      <div class="hero-main">
+        <p class="eyebrow">Lovely Private Vault</p>
+        <h1>Banti ❤ Ankita</h1>
+        <p class="hero-copy">
+          A premium private love gallery crafted for your memories, your moments, and your story.
+          Every photo is protected, elegant, and made to feel timeless.
+        </p>
+        <div class="hero-tags">
+          <span>Private by design</span>
+          <span>Owner controlled</span>
+          <span>Romantic premium experience</span>
+        </div>
+      </div>
+
+      <div class="hero-story">
+        <p class="eyebrow">Our Beginning</p>
+        <h3>First met on 14 Feb 2026</h3>
+        <p>
+          Built with love by <strong>Banti Kumar Bhagat</strong> for
+          <strong>Ankita Mahana</strong>, this space keeps your special memories close to heart.
+        </p>
       </div>
     </section>
 
@@ -45,11 +60,11 @@
     } @else if (!currentUser()) {
       <section class="panel auth-card">
         <div class="section-copy">
-          <p class="eyebrow">Login</p>
-          <h2>Sign in to the gallery</h2>
+          <p class="eyebrow">Private Access</p>
+          <h2>Enter your romantic gallery</h2>
           <p>
-            Use the owner account to upload and manage photos. Use the viewer account
-            if she should only open and browse the gallery.
+            Sign in securely to continue the story. Owner can curate memories. Viewer can
+            explore and relive every beautiful moment.
           </p>
         </div>
 
@@ -122,15 +137,20 @@
         </form>
       </section>
     } @else {
-      <section class="panel dashboard-card">
+      <section class="panel dashboard-card" [class.dashboard-card-viewer]="!isOwner()">
         <div class="dashboard-copy">
-          <p class="eyebrow">{{ isOwner() ? 'Owner Account' : 'Viewer Account' }}</p>
-          <h2>{{ isOwner() ? 'Manage the private gallery' : 'Browse the private gallery' }}</h2>
-          <p>Signed in as {{ currentUser()?.email }}</p>
+          <p class="eyebrow">{{ isOwner() ? 'Creator Lounge' : 'Viewer Lounge' }}</p>
+          <h2>{{ isOwner() ? 'Curate your love story' : 'Experience your love story' }}</h2>
+          <p>Welcome back, {{ currentUser()?.email }}</p>
           @if (isOwner()) {
             <div class="owner-premium-note">
               <span class="owner-heart">❤</span>
-              <span>Curated romantic mode enabled</span>
+              <span>Romantic creator mode enabled</span>
+            </div>
+          } @else {
+            <div class="viewer-premium-note">
+              <span class="viewer-star">✦</span>
+              <span>Premium viewer lounge enabled</span>
             </div>
           }
         </div>
@@ -138,22 +158,30 @@
         <div class="dashboard-actions">
           <article class="stat-card">
             <strong>{{ totalPhotos() }}</strong>
-            <span>photos</span>
+            <span>memories</span>
           </article>
           <article class="stat-card">
             <strong>{{ currentRole() }}</strong>
-            <span>role</span>
+            <span>access role</span>
           </article>
           <button class="secondary-button" type="button" (click)="signOut()">Sign out</button>
         </div>
       </section>
 
+      <section class="panel memory-banner">
+        <p class="eyebrow">Love Note</p>
+        <h3>
+          "From the first hello on 14 Feb 2026 to forever - every memory here is a heartbeat
+          of us."
+        </h3>
+      </section>
+
       @if (isOwner()) {
         <form class="panel upload-card" (ngSubmit)="saveSelectedPhotos(fileInput)">
           <div class="section-copy">
-            <p class="eyebrow">Upload</p>
-            <h2>Add private photos</h2>
-            <p>These uploads go to the private cloud bucket and stay hidden from the public.</p>
+            <p class="eyebrow">Owner Studio</p>
+            <h2>Add new chapters to your story</h2>
+            <p>Upload romantic moments to your private cloud vault and keep them beautifully organized.</p>
           </div>
 
           <label class="field">
@@ -176,7 +204,7 @@
               (click)="resetPickerValue($event)"
               (change)="onFilesChosen($event)"
             />
-            <span class="upload-title">Choose photos</span>
+            <span class="upload-title">Drop or choose photos</span>
             <span class="upload-subtitle">JPG, PNG, WebP, HEIC, HEIF and similar image files</span>
           </label>
 
@@ -229,20 +257,22 @@
               }}
             </button>
 
-            <p class="selection-note">
-              Viewer accounts can open these photos, but only the owner account can upload or delete them.
-            </p>
+            <p class="selection-note">Viewer can relive memories, while only owner can upload and curate.</p>
           </div>
         </form>
       }
 
-      <section class="gallery-section" [class.gallery-section-owner]="isOwner()">
+      <section
+        class="gallery-section"
+        [class.gallery-section-owner]="isOwner()"
+        [class.gallery-section-viewer]="!isOwner()"
+      >
         <div class="gallery-header">
           <div>
-            <p class="eyebrow">Gallery</p>
-            <h2>Private photos</h2>
+            <p class="eyebrow">Romantic Collection</p>
+            <h2>{{ isOwner() ? 'Your curated memory wall' : 'Ankita\'s romantic memory wall' }}</h2>
           </div>
-          <p class="section-note">Tap any photo to open it larger.</p>
+          <p class="section-note">Tap any memory to open the cinematic view.</p>
         </div>
 
         @if (photos().length) {
@@ -250,8 +280,7 @@
             @for (photo of photos(); track photo.id; let index = $index) {
               <article
                 class="gallery-card"
-                [class.gallery-card-wide]="index % 5 === 0"
-                [class.gallery-card-tall]="index % 3 === 0"
+                [class.gallery-card-featured]="index % 6 === 0"
               >
                 <button class="gallery-image" type="button" (click)="openPhoto(photo.id)">
                   <img [src]="photo.src" [alt]="photo.caption || photo.fileName" />
