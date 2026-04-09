@@ -4,6 +4,7 @@
   [class.page-shell-viewer]="!!currentUser() && !isOwner()"
 >
 
+
   <!-- Romantic floating hearts background -->
   <div class="romantic-hearts-bg">
     <ng-container *ngFor="let h of [1,2,3,4,5,6,7,8,9,10]; let i = index">
@@ -330,23 +331,13 @@
   </main>
 
   @if (selectedPhoto(); as photo) {
-    <div class="lightbox" (click)="closePhoto()">
-      <div class="lightbox-card panel" (click)="$event.stopPropagation()">
-        <button class="secondary-button lightbox-close" type="button" (click)="closePhoto()" aria-label="Close">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="7" y1="7" x2="21" y2="21" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="21" y1="7" x2="7" y2="21" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
-        </button>
-
-        <div class="lightbox-image">
-          <img [src]="photo.src" [alt]="formatPhotoTitle(photo)" />
-        </div>
-
-        <div class="lightbox-copy">
-          <p class="gallery-caption">{{ getPhotoCaption(photo) }}</p>
-        </div>
-      </div>
-    </div>
+    <!-- Romantic, swipeable lightbox using fslightbox-angular -->
+    <fs-lightbox
+      [sources]="photos().map(p => p.src)"
+      [toggler]="lightboxOpen"
+      [slide]="selectedPhotoIndex"
+      (onClose)="closePhoto()"
+      class="romantic-lightbox"
+    ></fs-lightbox>
   }
 </div>

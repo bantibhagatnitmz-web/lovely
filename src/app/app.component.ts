@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FsLightbox } from 'fslightbox-angular/16-19';
 import { AccessRole, GalleryPhoto, LoveVaultService, UploadPhotoInput } from './love-vault.service';
 import { looksLikeImageFile, normalizePhotoBlob } from './photo-normalizer';
 
@@ -14,7 +15,7 @@ interface SelectedUploadPreview {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FsLightbox],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -43,6 +44,10 @@ export class AppComponent implements OnDestroy {
   password = '';
   photoCaption = '';
   selectedUploads: SelectedUploadPreview[] = [];
+
+  // Add lightbox state for fslightbox-angular
+  lightboxOpen = false;
+  selectedPhotoIndex = 1;
 
   ngOnDestroy(): void {
     this.clearSelectedUploads();
@@ -264,12 +269,16 @@ export class AppComponent implements OnDestroy {
   }
 
   openPhoto(id: string): void {
-    console.log('openPhoto called with id:', id);
+    const index = this.photos().findIndex((photo) => photo.id === id);
+    if (index !== -1) {
+      this.selectedPhotoIndex = index + 1; // fslightbox is 1-based
+      this.lightboxOpen = !this.lightboxOpen; // toggler must change value to open
+    }
     this.selectedPhotoId.set(id);
-    console.log('selectedPhotoId is now:', this.selectedPhotoId());
   }
 
   closePhoto(): void {
+    this.lightboxOpen = false;
     this.selectedPhotoId.set(null);
   }
 
@@ -376,5 +385,9 @@ export class AppComponent implements OnDestroy {
     }
 
     this.selectedUploads = [];
+  }
+
+  isMobile(): boolean {
+    return window.innerWidth <= 680;
   }
 }

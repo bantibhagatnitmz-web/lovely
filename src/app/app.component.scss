@@ -903,6 +903,37 @@ h3 {
   margin-left: 0.1em;
 }
 
+.romantic-lightbox .fslightbox-container {
+  background: radial-gradient(ellipse at center, #2d001a 80%, #e11d48 100%) !important;
+}
+.romantic-lightbox .fslightbox-slide-btn {
+  background: rgba(225, 29, 72, 0.85) !important;
+  border-radius: 50%;
+  box-shadow: 0 2px 16px 0 rgba(225, 29, 72, 0.18);
+  border: 2px dashed #fff;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.romantic-lightbox .fslightbox-slide-btn:hover {
+  background: #e11d48 !important;
+}
+.romantic-lightbox .fslightbox-slide-number {
+  color: #fff0f6 !important;
+  font-family: 'Dancing Script', cursive, sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 12px #e11d48;
+}
+.romantic-lightbox .fslightbox-source {
+  border-radius: 18px;
+  box-shadow: 0 4px 48px 0 #e11d4822, 0 1.5px 0 0 #fff4;
+  border: 4px dashed #e11d48;
+}
+
 @media (max-width: 900px) {
   .setup-steps,
   .form-grid,
