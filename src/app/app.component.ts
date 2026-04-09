@@ -33,9 +33,7 @@ export class AppComponent implements OnDestroy {
   readonly selectedPhotoId = signal<string | null>(null);
   readonly selectedPhoto = computed(
     () => {
-      const found = this.photos().find((photo) => photo.id === this.selectedPhotoId()) ?? null;
-      console.log('selectedPhoto computed:', found);
-      return found;
+      return this.photos().find((photo) => photo.id === this.selectedPhotoId()) ?? null;
     }
   );
 
@@ -48,6 +46,13 @@ export class AppComponent implements OnDestroy {
   // Add lightbox state for fslightbox-angular
   lightboxOpen = false;
   selectedPhotoIndex = 1;
+  private previousBodyOverflow: string | null = null;
+  private previousBodyPosition: string | null = null;
+  private previousBodyTop: string | null = null;
+  private previousScrollY: number | null = null;
+  readonly handleLightboxClose = (): void => {
+    this.closePhoto();
+  };
 
   ngOnDestroy(): void {
     this.clearSelectedUploads();
@@ -271,15 +276,39 @@ export class AppComponent implements OnDestroy {
   openPhoto(id: string): void {
     const index = this.photos().findIndex((photo) => photo.id === id);
     if (index !== -1) {
+      this.selectedPhotoId.set(id);
       this.selectedPhotoIndex = index + 1; // fslightbox is 1-based
-      this.lightboxOpen = !this.lightboxOpen; // toggler must change value to open
+      this.lightboxOpen = false;
+      queueMicrotask(() => {
+        this.lightboxOpen = true;
+      });
+      // Lock scroll (full lock)
+      this.previousBodyOverflow = document.body.style.overflow;
+      this.previousBodyPosition = document.body.style.position;
+      this.previousBodyTop = document.body.style.top;
+      this.previousScrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${window.scrollY}px`;
+      document.body.style.width = '100%';
     }
-    this.selectedPhotoId.set(id);
   }
 
   closePhoto(): void {
     this.lightboxOpen = false;
     this.selectedPhotoId.set(null);
+    // Restore scroll
+    if (this.previousBodyOverflow !== null) {
+      document.body.style.overflow = this.previousBodyOverflow;
+      document.body.style.position = this.previousBodyPosition || '';
+      document.body.style.top = this.previousBodyTop || '';
+      document.body.style.width = '';
+      window.scrollTo(0, this.previousScrollY || 0);
+      this.previousBodyOverflow = null;
+      this.previousBodyPosition = null;
+      this.previousBodyTop = null;
+      this.previousScrollY = null;
+    }
   }
 
   private romanticCaptions = [
@@ -389,5 +418,9 @@ export class AppComponent implements OnDestroy {
 
   isMobile(): boolean {
     return window.innerWidth <= 680;
+  }
+
+  get photoSources(): string[] {
+    return this.photos().map((p) => p.src);
   }
 }

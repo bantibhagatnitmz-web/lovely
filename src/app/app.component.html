@@ -282,9 +282,13 @@
               >
                 <button class="gallery-image" type="button" (click)="openPhoto(photo.id)">
                   <img [src]="photo.src" [alt]="formatPhotoTitle(photo)" />
+                  <span class="gallery-image-overlay">
+                    <span>Open memory</span>
+                  </span>
                 </button>
 
                 <div class="gallery-copy">
+                  <p class="gallery-date">{{ photo.addedAt | date:'MMM d, y' }}</p>
                   <p class="gallery-caption">{{ getPhotoCaption(photo) }}</p>
 
                   @if (isOwner()) {
@@ -330,14 +334,18 @@
     }
   </main>
 
-  @if (selectedPhoto(); as photo) {
+  @if (photos().length) {
     <!-- Romantic, swipeable lightbox using fslightbox-angular -->
-    <fs-lightbox
-      [sources]="photos().map(p => p.src)"
+    <fslightbox
+      [sources]="photoSources"
       [toggler]="lightboxOpen"
       [slide]="selectedPhotoIndex"
-      (onClose)="closePhoto()"
+      [onClose]="handleLightboxClose"
+      [disableBackgroundClose]="true"
+      [exitFullscreenOnClose]="true"
+      [slideDistance]="1"
+      [disableLocalStorage]="true"
       class="romantic-lightbox"
-    ></fs-lightbox>
+    ></fslightbox>
   }
 </div>

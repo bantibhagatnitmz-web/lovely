@@ -20,6 +20,6 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain("Ankita's private gallery");
+    expect(compiled.textContent).toContain('Lovely Private Vault');
   });
 });
