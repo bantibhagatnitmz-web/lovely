@@ -31,7 +31,11 @@ export class AppComponent implements OnDestroy {
   readonly savingUploads = signal(false);
   readonly selectedPhotoId = signal<string | null>(null);
   readonly selectedPhoto = computed(
-    () => this.photos().find((photo) => photo.id === this.selectedPhotoId()) ?? null
+    () => {
+      const found = this.photos().find((photo) => photo.id === this.selectedPhotoId()) ?? null;
+      console.log('selectedPhoto computed:', found);
+      return found;
+    }
   );
 
   confirmPassword = '';
@@ -260,7 +264,9 @@ export class AppComponent implements OnDestroy {
   }
 
   openPhoto(id: string): void {
+    console.log('openPhoto called with id:', id);
     this.selectedPhotoId.set(id);
+    console.log('selectedPhotoId is now:', this.selectedPhotoId());
   }
 
   closePhoto(): void {
