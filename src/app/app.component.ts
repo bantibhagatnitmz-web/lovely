@@ -317,6 +317,10 @@ export class AppComponent implements OnDestroy {
   }
 
   getPhotoCaption(photo: GalleryPhoto): string {
+    const dbCaption = photo.caption?.trim();
+    if (dbCaption) {
+      return dbCaption;
+    }
     // Use photo ID or index to consistently assign romantic captions
     const photoId = photo.id;
     const hashCode = photoId.split('').reduce((acc, char) => {
