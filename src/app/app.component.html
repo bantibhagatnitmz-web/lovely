@@ -3,6 +3,19 @@
   [class.page-shell-owner]="isOwner()"
   [class.page-shell-viewer]="!!currentUser() && !isOwner()"
 >
+
+  <!-- Romantic floating hearts background -->
+  <div class="romantic-hearts-bg">
+    <ng-container *ngFor="let h of [1,2,3,4,5,6,7,8,9,10]; let i = index">
+      <span class="romantic-heart" [ngStyle]="{
+        left: (10 + i * 8 + (i % 2 === 0 ? 4 : -4)) + '%',
+        animationDelay: (i * 1.7) + 's',
+        top: (i % 3) * 12 + '%',
+        opacity: 0.14 + (i % 3) * 0.04
+      }"></span>
+    </ng-container>
+  </div>
+
   <main class="page">
     <section class="panel hero-card">
       <div class="hero-main">
@@ -137,17 +150,6 @@
           <p class="eyebrow">{{ isOwner() ? 'Love Keeper' : 'My Love Ankita' }}</p>
           <h2>{{ isOwner() ? 'Curate our love story' : 'Relive our love story' }}</h2>
           <p>Welcome back, {{ currentUser()?.email }}</p>
-          @if (isOwner()) {
-            <div class="owner-premium-note">
-              <span class="owner-heart">❤</span>
-              <span>Romantic creator mode enabled</span>
-            </div>
-          } @else {
-            <div class="viewer-premium-note">
-              <span class="viewer-star">✦</span>
-              <span>Romantic memory mode</span>
-            </div>
-          }
         </div>
 
         <div class="dashboard-actions">
@@ -265,7 +267,6 @@
       >
         <div class="gallery-header">
           <div>
-            <p class="eyebrow">Romantic Collection</p>
             <h2>{{ isOwner() ? 'Our forever memory wall' : 'Our forever memory wall' }}</h2>
           </div>
           <p class="section-note">Tap any memory and relive the love in full view.</p>
