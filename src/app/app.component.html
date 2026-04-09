@@ -1,4 +1,4 @@
-<div class="page-shell">
+<div class="page-shell" [class.page-shell-owner]="isOwner()">
   <main class="page">
     <section class="panel hero-card">
       <p class="eyebrow">Private Cloud Gallery</p>
@@ -127,6 +127,12 @@
           <p class="eyebrow">{{ isOwner() ? 'Owner Account' : 'Viewer Account' }}</p>
           <h2>{{ isOwner() ? 'Manage the private gallery' : 'Browse the private gallery' }}</h2>
           <p>Signed in as {{ currentUser()?.email }}</p>
+          @if (isOwner()) {
+            <div class="owner-premium-note">
+              <span class="owner-heart">❤</span>
+              <span>Curated romantic mode enabled</span>
+            </div>
+          }
         </div>
 
         <div class="dashboard-actions">
@@ -230,7 +236,7 @@
         </form>
       }
 
-      <section class="gallery-section">
+      <section class="gallery-section" [class.gallery-section-owner]="isOwner()">
         <div class="gallery-header">
           <div>
             <p class="eyebrow">Gallery</p>
