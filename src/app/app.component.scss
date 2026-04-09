@@ -619,3 +619,51 @@ h3 {
   gap: 0.75rem;
   margin-top: 0.2rem;
 }
+
+@media (max-width: 900px) {
+  .setup-steps,
+  .form-grid,
+  .dashboard-card,
+  .dashboard-actions,
+  .hero-card {
+    grid-template-columns: 1fr;
+  }
+  .gallery-card,
+  .gallery-card-wide,
+  .gallery-card-featured {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 680px) {
+  .page {
+    width: min(100% - 1rem, 1120px);
+  }
+  .hero-card,
+  .setup-card,
+  .loading-card,
+  .auth-card,
+  .dashboard-card,
+  .upload-card,
+  .message-card,
+  .empty-card {
+    padding: 1.2rem;
+  }
+  .gallery-header,
+  .preview-head,
+  .action-row {
+    align-items: start;
+    flex-direction: column;
+  }
+  .gallery-card,
+  .gallery-card-wide,
+  .gallery-card-featured {
+    grid-column: span 12;
+  }
+  .auth-switch {
+    flex-wrap: wrap;
+  }
+  .memory-banner {
+    padding: 1.1rem 1.1rem;
+  }
+}
