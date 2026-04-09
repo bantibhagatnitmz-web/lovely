@@ -1,0 +1,321 @@
+<div class="page-shell">
+  <main class="page">
+    <section class="panel hero-card">
+      <p class="eyebrow">Private Cloud Gallery</p>
+      <h1>Ankita's private gallery</h1>
+      <p class="hero-copy">
+        A private cloud gallery with real login, owner uploads, viewer-only access,
+        and photos stored in a private bucket.
+      </p>
+      <div class="hero-tags">
+        <span>Owner uploads</span>
+        <span>Viewer can only browse</span>
+        <span>Private cloud storage</span>
+      </div>
+    </section>
+
+    @if (!vault.configured()) {
+      <section class="panel setup-card">
+        <p class="eyebrow">Supabase Setup</p>
+        <h2>Connect the cloud gallery</h2>
+        <p>
+          Add your Supabase URL and anon key in the config file, then run the SQL
+          setup for the gallery tables, roles, and storage policies.
+        </p>
+
+        <div class="setup-steps">
+          <article class="step-card">
+            <strong>1</strong>
+            <p>Fill the Supabase project values in the app config.</p>
+          </article>
+          <article class="step-card">
+            <strong>2</strong>
+            <p>Create a private bucket named <code>ankita-private-gallery</code>.</p>
+          </article>
+          <article class="step-card">
+            <strong>3</strong>
+            <p>Run the SQL file to create the tables and owner/viewer policies.</p>
+          </article>
+        </div>
+      </section>
+    } @else if (!vault.ready()) {
+      <section class="panel loading-card">
+        <p>Loading the gallery connection...</p>
+      </section>
+    } @else if (!currentUser()) {
+      <section class="panel auth-card">
+        <div class="section-copy">
+          <p class="eyebrow">Login</p>
+          <h2>Sign in to the gallery</h2>
+          <p>
+            Use the owner account to upload and manage photos. Use the viewer account
+            if she should only open and browse the gallery.
+          </p>
+        </div>
+
+        <div class="auth-switch">
+          <button
+            class="switch-button"
+            type="button"
+            [class.switch-button-active]="authMode() === 'sign-in'"
+            (click)="setAuthMode('sign-in')"
+          >
+            Sign in
+          </button>
+          <button
+            class="switch-button"
+            type="button"
+            [class.switch-button-active]="authMode() === 'sign-up'"
+            (click)="setAuthMode('sign-up')"
+          >
+            Sign up
+          </button>
+        </div>
+
+        <form class="form-grid" (ngSubmit)="submitAuth()">
+          <label class="field field-full">
+            <span>Email</span>
+            <input
+              [(ngModel)]="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="owner or viewer email"
+            />
+          </label>
+
+          <label class="field field-full">
+            <span>Password</span>
+            <input
+              [(ngModel)]="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="your password"
+            />
+          </label>
+
+          @if (authMode() === 'sign-up') {
+            <label class="field field-full">
+              <span>Confirm password</span>
+              <input
+                [(ngModel)]="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autocomplete="new-password"
+                placeholder="type it again"
+              />
+            </label>
+          }
+
+          <button class="primary-button" type="submit" [disabled]="vault.busy()">
+            {{
+              vault.busy()
+                ? authMode() === 'sign-up'
+                  ? 'Creating...'
+                  : 'Signing in...'
+                : authMode() === 'sign-up'
+                  ? 'Create account'
+                  : 'Sign in'
+            }}
+          </button>
+        </form>
+      </section>
+    } @else {
+      <section class="panel dashboard-card">
+        <div class="dashboard-copy">
+          <p class="eyebrow">{{ isOwner() ? 'Owner Account' : 'Viewer Account' }}</p>
+          <h2>{{ isOwner() ? 'Manage the private gallery' : 'Browse the private gallery' }}</h2>
+          <p>Signed in as {{ currentUser()?.email }}</p>
+        </div>
+
+        <div class="dashboard-actions">
+          <article class="stat-card">
+            <strong>{{ totalPhotos() }}</strong>
+            <span>photos</span>
+          </article>
+          <article class="stat-card">
+            <strong>{{ currentRole() }}</strong>
+            <span>role</span>
+          </article>
+          <button class="secondary-button" type="button" (click)="signOut()">Sign out</button>
+        </div>
+      </section>
+
+      @if (isOwner()) {
+        <form class="panel upload-card" (ngSubmit)="saveSelectedPhotos(fileInput)">
+          <div class="section-copy">
+            <p class="eyebrow">Upload</p>
+            <h2>Add private photos</h2>
+            <p>These uploads go to the private cloud bucket and stay hidden from the public.</p>
+          </div>
+
+          <label class="field">
+            <span>Caption (optional)</span>
+            <input
+              [(ngModel)]="photoCaption"
+              name="photoCaption"
+              type="text"
+              maxlength="120"
+              placeholder="short caption for this upload"
+            />
+          </label>
+
+          <label class="upload-drop">
+            <input
+              #fileInput
+              type="file"
+              accept="image/*,.heic,.heif"
+              multiple
+              (click)="resetPickerValue($event)"
+              (change)="onFilesChosen($event)"
+            />
+            <span class="upload-title">Choose photos</span>
+            <span class="upload-subtitle">JPG, PNG, WebP, HEIC, HEIF and similar image files</span>
+          </label>
+
+          @if (selectedUploads.length) {
+            <div class="preview-board">
+              <div class="preview-head">
+                <p class="eyebrow">Ready to upload</p>
+                <span class="selection-note">
+                  {{ selectedUploads.length }} file{{ selectedUploads.length === 1 ? '' : 's' }}
+                </span>
+              </div>
+
+              <div class="preview-grid">
+                @for (upload of selectedUploads; track upload.id) {
+                  <article class="preview-card">
+                    <div class="preview-frame">
+                      @if (upload.previewSrc) {
+                        <img [src]="upload.previewSrc" [alt]="upload.fileName" />
+                      } @else {
+                        <div class="preview-placeholder">
+                          <span>Ready to upload</span>
+                          <strong>{{ upload.fileName }}</strong>
+                        </div>
+                      }
+                    </div>
+                    <p>{{ upload.fileName }}</p>
+                    @if (upload.wasHeicConverted) {
+                      <span class="status-pill">Preview converted from HEIC</span>
+                    } @else if (!upload.previewSrc) {
+                      <span class="status-pill">Preview unavailable</span>
+                    }
+                  </article>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="action-row">
+            <button
+              class="primary-button"
+              type="submit"
+              [disabled]="preparingUploads() || savingUploads() || vault.busy() || !selectedUploads.length"
+            >
+              {{
+                preparingUploads()
+                  ? 'Preparing...'
+                  : savingUploads() || vault.busy()
+                    ? 'Uploading...'
+                    : 'Upload to private gallery'
+              }}
+            </button>
+
+            <p class="selection-note">
+              Viewer accounts can open these photos, but only the owner account can upload or delete them.
+            </p>
+          </div>
+        </form>
+      }
+
+      <section class="gallery-section">
+        <div class="gallery-header">
+          <div>
+            <p class="eyebrow">Gallery</p>
+            <h2>Private photos</h2>
+          </div>
+          <p class="section-note">Tap any photo to open it larger.</p>
+        </div>
+
+        @if (photos().length) {
+          <div class="gallery-grid">
+            @for (photo of photos(); track photo.id; let index = $index) {
+              <article
+                class="gallery-card"
+                [class.gallery-card-wide]="index % 5 === 0"
+                [class.gallery-card-tall]="index % 3 === 0"
+              >
+                <button class="gallery-image" type="button" (click)="openPhoto(photo.id)">
+                  <img [src]="photo.src" [alt]="photo.caption || photo.fileName" />
+                </button>
+
+                <div class="gallery-copy">
+                  <p class="gallery-date">{{ photo.addedAt | date: 'mediumDate' }}</p>
+                  <h3>{{ photo.caption || photo.fileName }}</h3>
+                  <p>{{ photo.caption || 'Private photo stored in the cloud gallery.' }}</p>
+
+                  @if (isOwner()) {
+                    <div class="gallery-actions">
+                      <button class="secondary-button" type="button" (click)="removePhoto(photo)">
+                        Delete
+                      </button>
+                    </div>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <section class="panel empty-card">
+            <h3>No photos yet</h3>
+            <p>
+              @if (isOwner()) {
+                Upload the first private photos and they will appear here.
+              } @else {
+                The owner has not uploaded any photos yet.
+              }
+            </p>
+          </section>
+        }
+      </section>
+    }
+
+    @if (feedback(); as message) {
+      <section
+        class="panel message-card"
+        [class.message-error]="message.tone === 'error'"
+        [class.message-success]="message.tone === 'success'"
+      >
+        <p>{{ message.text }}</p>
+      </section>
+    }
+
+    @if (vault.errorMessage()) {
+      <section class="panel message-card message-error">
+        <p>{{ vault.errorMessage() }}</p>
+      </section>
+    }
+  </main>
+
+  @if (selectedPhoto(); as photo) {
+    <div class="lightbox" (click)="closePhoto()">
+      <div class="lightbox-card panel" (click)="$event.stopPropagation()">
+        <button class="secondary-button lightbox-close" type="button" (click)="closePhoto()">
+          Close
+        </button>
+
+        <div class="lightbox-image">
+          <img [src]="photo.src" [alt]="photo.caption || photo.fileName" />
+        </div>
+
+        <div class="lightbox-copy">
+          <p class="gallery-date">{{ photo.addedAt | date: 'fullDate' }}</p>
+          <h3>{{ photo.caption || photo.fileName }}</h3>
+          <p>{{ photo.caption || 'Private photo stored in the cloud gallery.' }}</p>
+        </div>
+      </div>
+    </div>
+  }
+</div>

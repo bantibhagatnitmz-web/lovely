@@ -1,0 +1,33 @@
+:root {
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Optima', 'Avenir Next', 'Segoe UI', sans-serif;
+  background: #220914;
+  color: #28111c;
+  scroll-behavior: smooth;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
