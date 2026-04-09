@@ -600,24 +600,107 @@ h3 {
   overflow: hidden;
 }
 
-.lightbox-copy {
-  padding: 0.75rem 0 0 0;
-}
-
-.lightbox-copy p {
-  margin: 0;
-  color: var(--rose);
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.6;
-  font-style: italic;
-  letter-spacing: 0.02em;
-}
-
-.gallery-actions {
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   display: flex;
-  gap: 0.75rem;
-  margin-top: 0.2rem;
+  align-items: center;
+  justify-content: center;
+  background: rgba(32, 12, 21, 0.92);
+  backdrop-filter: blur(10px);
+  padding: 0;
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.lightbox-card {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  animation: none;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 2;
+  background: none;
+  color: #e11d48;
+  font-size: 1.6rem;
+  font-weight: bold;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s;
+  cursor: pointer;
+}
+
+.lightbox-close svg {
+  display: block;
+}
+
+.lightbox-image {
+  flex: 1 1 auto;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+}
+
+.lightbox-image img {
+  max-width: 100vw;
+  max-height: 100vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+}
+
+.lightbox-copy {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  text-align: center;
+  color: #fff !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 1.2rem 1.5rem 1.6rem 1.5rem;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(32,12,21,0.92) 70%, rgba(32,12,21,0.18) 100%);
+  box-sizing: border-box;
+}
+
+.lightbox-copy p, .lightbox-copy .gallery-caption {
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 1.25rem;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  margin: 0;
 }
 
 @media (max-width: 900px) {
