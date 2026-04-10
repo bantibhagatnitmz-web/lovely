@@ -5,7 +5,6 @@
 >
 
 
-  <!-- Romantic floating hearts background -->
   <div class="romantic-hearts-bg">
     <ng-container *ngFor="let h of [1,2,3,4,5,6,7,8,9,10]; let i = index">
       <span class="romantic-heart" [ngStyle]="{
@@ -20,7 +19,6 @@
   <main class="page">
     <section class="panel hero-card">
       <div class="hero-main">
-        <p class="eyebrow">Lovely Private Vault</p>
         <h1>Banti ❤ Ankita</h1>
         <p class="hero-copy">
           In every photo, I find your smile. In every memory, I find my forever.
@@ -41,40 +39,32 @@
     @if (!vault.configured()) {
       <section class="panel setup-card">
         <p class="eyebrow">Supabase Setup</p>
-        <h2>Connect the cloud gallery</h2>
-        <p>
-          Add your Supabase URL and anon key in the config file, then run the SQL
-          setup for the gallery tables, roles, and storage policies.
-        </p>
+        <h2>Connect the gallery</h2>
 
         <div class="setup-steps">
           <article class="step-card">
             <strong>1</strong>
-            <p>Fill the Supabase project values in the app config.</p>
+            <p>Add the Supabase keys.</p>
           </article>
           <article class="step-card">
             <strong>2</strong>
-            <p>Create a private bucket named <code>ankita-private-gallery</code>.</p>
+            <p>Create the private bucket.</p>
           </article>
           <article class="step-card">
             <strong>3</strong>
-            <p>Run the SQL file to create the tables and owner/viewer policies.</p>
+            <p>Run the SQL once.</p>
           </article>
         </div>
       </section>
     } @else if (!vault.ready()) {
       <section class="panel loading-card">
-        <p>Loading the gallery connection...</p>
+        <p>Opening the memory vault...</p>
       </section>
     } @else if (!currentUser()) {
       <section class="panel auth-card">
         <div class="section-copy">
-          <p class="eyebrow">Private Access</p>
-          <h2>Enter your romantic gallery</h2>
-          <p>
-            Sign in securely to continue the story. Owner can curate memories. Viewer can
-            explore and relive every beautiful moment.
-          </p>
+          <p class="eyebrow">Private access</p>
+          <h2>Lovely Private Vault</h2>
         </div>
 
         <div class="auth-switch">
@@ -148,8 +138,8 @@
     } @else {
       <section class="panel dashboard-card" [class.dashboard-card-viewer]="!isOwner()">
         <div class="dashboard-copy">
-          <p class="eyebrow">{{ isOwner() ? 'Love Keeper' : 'My Love Ankita' }}</p>
-          <h2>{{ isOwner() ? 'Curate our love story' : 'Relive our love story' }}</h2>
+          <p class="eyebrow">{{ 'My Love Ankita' }}</p>
+          <h2>{{ 'Relive our love story' }}</h2>
           <p>Welcome back, {{ currentUser()?.email }}</p>
         </div>
 
@@ -157,10 +147,6 @@
           <article class="stat-card">
             <strong>{{ totalPhotos() }}</strong>
             <span>memories</span>
-          </article>
-          <article class="stat-card">
-            <strong>{{ currentRole() }}</strong>
-            <span>access role</span>
           </article>
           <button class="secondary-button" type="button" (click)="signOut()">Sign out</button>
         </div>
@@ -178,9 +164,9 @@
       @if (isOwner()) {
         <form class="panel upload-card" (ngSubmit)="saveSelectedPhotos(fileInput)">
           <div class="section-copy">
-            <p class="eyebrow">Owner Studio</p>
-            <h2>Add new chapters to your story</h2>
-            <p>Upload romantic moments to your private cloud vault and keep them beautifully organized.</p>
+            <p class="eyebrow">Owner studio</p>
+            <h2>Upload memories</h2>
+            <p>Keep it quiet, private, and beautiful.</p>
           </div>
 
           <label class="field">
@@ -204,7 +190,7 @@
               (change)="onFilesChosen($event)"
             />
             <span class="upload-title">Drop or choose photos</span>
-            <span class="upload-subtitle">JPG, PNG, WebP, HEIC, HEIF and similar image files</span>
+            <span class="upload-subtitle">JPG, PNG, WebP, HEIC, HEIF</span>
           </label>
 
           @if (selectedUploads.length) {
@@ -212,29 +198,26 @@
               <div class="preview-head">
                 <p class="eyebrow">Ready to upload</p>
                 <span class="selection-note">
-                  {{ selectedUploads.length }} file{{ selectedUploads.length === 1 ? '' : 's' }}
+                  {{ selectedUploads.length }} photo{{ selectedUploads.length === 1 ? '' : 's' }} selected
                 </span>
               </div>
-
               <div class="preview-grid">
                 @for (upload of selectedUploads; track upload.id) {
                   <article class="preview-card">
                     <div class="preview-frame">
                       @if (upload.previewSrc) {
                         <img [src]="upload.previewSrc" [alt]="upload.fileName" />
-                      } @else {
-                        <div class="preview-placeholder">
-                          <span>Ready to upload</span>
-                          <strong>{{ upload.fileName }}</strong>
-                        </div>
                       }
                     </div>
-                    <p>{{ upload.fileName }}</p>
-                    @if (upload.wasHeicConverted) {
-                      <span class="status-pill">Preview converted from HEIC</span>
-                    } @else if (!upload.previewSrc) {
-                      <span class="status-pill">Preview unavailable</span>
-                    }
+                    <label class="field preview-music-field">
+                      <span>YouTube music link for this photo</span>
+                      <input
+                        [(ngModel)]="upload.soundtrackLinkUrl"
+                        [name]="'soundtrackLink-' + upload.id"
+                        type="url"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                    </label>
                   </article>
                 }
               </div>
@@ -255,8 +238,6 @@
                     : 'Upload to private gallery'
               }}
             </button>
-
-            <p class="selection-note">Viewer can relive memories, while only owner can upload and curate.</p>
           </div>
         </form>
       }
@@ -270,7 +251,6 @@
           <div>
             <h2>{{ isOwner() ? 'Our forever memory wall' : 'Our forever memory wall' }}</h2>
           </div>
-          <p class="section-note">Tap any memory and relive the love in full view.</p>
         </div>
 
         @if (photos().length) {
@@ -288,11 +268,14 @@
                 </button>
 
                 <div class="gallery-copy">
-                  <p class="gallery-date">{{ photo.addedAt | date:'MMM d, y' }}</p>
+                  <!-- <p class="gallery-date">{{ photo.addedAt | date:'MMM d, y' }}</p> -->
                   <p class="gallery-caption">{{ getPhotoCaption(photo) }}</p>
 
                   @if (isOwner()) {
                     <div class="gallery-actions">
+                      <button class="secondary-button" type="button" (click)="openMusicEditor(photo)">
+                        Edit music
+                      </button>
                       <button class="secondary-button" type="button" (click)="removePhoto(photo)">
                         Delete
                       </button>
@@ -334,18 +317,82 @@
     }
   </main>
 
-  @if (photos().length) {
-    <!-- Romantic, swipeable lightbox using fslightbox-angular -->
-    <fslightbox
-      [sources]="photoSources"
-      [toggler]="lightboxOpen"
-      [slide]="selectedPhotoIndex"
-      [onClose]="handleLightboxClose"
-      [disableBackgroundClose]="true"
-      [exitFullscreenOnClose]="true"
-      [slideDistance]="1"
-      [disableLocalStorage]="true"
-      class="romantic-lightbox"
-    ></fslightbox>
+  @if (selectedPhoto(); as photo) {
+    <section class="lightbox" (click)="closePhoto()">
+      <div class="lightbox-card" (click)="$event.stopPropagation()">
+        <button class="lightbox-close" type="button" (click)="closePhoto()" aria-label="Close">×</button>
+        <div class="lightbox-image">
+          <img [src]="photo.src" [alt]="formatPhotoTitle(photo)" />
+        </div>
+        <div
+          #musicRail
+          class="music-rail music-rail-modal"
+          [class.is-dragging]="musicPlayerDragging()"
+          [style.left.px]="musicPlayerX"
+          [style.top.px]="musicPlayerY"
+        >
+          <button
+            class="music-drag-handle"
+            type="button"
+            aria-label="Drag music player"
+            title="Drag music player"
+            (pointerdown)="startMusicDrag($event, musicRail)"
+          >
+            <span class="music-drag-handle-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+            <span class="music-drag-handle-label">Drag music</span>
+          </button>
+          @if (isYouTubeLink(getSoundtrackUrl(photo))) {
+            <iframe
+              class="music-embed"
+              [src]="getYouTubeEmbedUrl(getSoundtrackUrl(photo))"
+              title="Music player"
+              loading="lazy"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          } @else if (isAudioLink(getSoundtrackUrl(photo))) {
+            <audio controls autoplay [src]="getSoundtrackUrl(photo)"></audio>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (editingMusicPhoto(); as editingPhoto) {
+    <section class="editor-backdrop" (click)="closeMusicEditor()">
+      <form class="panel music-editor" (click)="$event.stopPropagation()" (ngSubmit)="saveMusicEditor()">
+        <div class="section-copy">
+          <p class="eyebrow">Edit music</p>
+          <h2>{{ formatPhotoTitle(editingPhoto) }}</h2>
+          <p>Change the YouTube link for this memory.</p>
+        </div>
+
+        <label class="field">
+          <span>Music title (optional)</span>
+          <input [(ngModel)]="editMusicTitle" name="editMusicTitle" type="text" placeholder="Tum Mile" />
+        </label>
+
+        <label class="field">
+          <span>YouTube embed link</span>
+          <input
+            [(ngModel)]="editMusicLink"
+            name="editMusicLink"
+            type="url"
+            placeholder="https://www.youtube.com/watch?v=..."
+          />
+        </label>
+
+        <div class="action-row">
+          <button class="primary-button" type="submit" [disabled]="vault.busy()">
+            {{ vault.busy() ? 'Saving...' : 'Save music' }}
+          </button>
+          <button class="secondary-button" type="button" (click)="closeMusicEditor()">Cancel</button>
+        </div>
+      </form>
+    </section>
   }
 </div>

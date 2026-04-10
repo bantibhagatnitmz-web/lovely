@@ -16,11 +16,15 @@ export interface GalleryPhoto {
   addedAt: string;
   src: string;
   storagePath: string;
+  soundtrackTitle: string;
+  soundtrackLinkUrl: string;
 }
 
 export interface UploadPhotoInput {
   blob: Blob;
   fileName: string;
+  soundtrackTitle?: string;
+  soundtrackLinkUrl?: string;
 }
 
 interface GalleryMemberRow {
@@ -34,6 +38,8 @@ interface GalleryPhotoRow {
   caption: string | null;
   created_at: string;
   storage_path: string;
+  soundtrack_title: string | null;
+  soundtrack_link_url: string | null;
 }
 
 type AppGlobal = typeof globalThis & {
@@ -220,16 +226,18 @@ export class LoveVaultService {
 
     this.busy.set(true);
     this.errorMessage.set('');
+    const supabase = this.supabase;
 
     try {
-      const rows: GalleryPhotoRow[] = [];
-
-      for (const file of imageFiles) {
+      const rows = await Promise.all(
+        imageFiles.map(async (file) => {
+        const soundtrackTitle = file.soundtrackTitle?.trim() || '';
+        const soundtrackLinkUrl = file.soundtrackLinkUrl?.trim() || '';
         const normalizedFile = await normalizePhotoBlob(file.blob, file.fileName);
         const extension = this.getFileExtension(normalizedFile.fileName, normalizedFile.blob.type);
         const storagePath = `photos/${crypto.randomUUID()}.${extension}`;
 
-        const { error: uploadError } = await this.supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from(cloudGalleryConfig.bucketName)
           .upload(storagePath, normalizedFile.blob, {
             contentType: normalizedFile.blob.type || 'image/jpeg',
@@ -240,16 +248,19 @@ export class LoveVaultService {
           throw uploadError;
         }
 
-        rows.push({
+        return {
           caption: caption.trim(),
           created_at: new Date().toISOString(),
           file_name: normalizedFile.fileName,
           id: crypto.randomUUID(),
-          storage_path: storagePath
-        });
-      }
+          storage_path: storagePath,
+          soundtrack_title: soundtrackTitle,
+          soundtrack_link_url: soundtrackLinkUrl || null
+        };
+        })
+      );
 
-      const { error: insertError } = await this.supabase.from('gallery_photos').insert(rows);
+      const { error: insertError } = await supabase.from('gallery_photos').insert(rows);
 
       if (insertError) {
         throw insertError;
@@ -297,6 +308,39 @@ export class LoveVaultService {
       return true;
     } catch (error) {
       const details = error instanceof Error ? error.message : 'Delete failed.';
+      this.errorMessage.set(this.formatAuthError(details));
+      return false;
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async updatePhotoMusic(photoId: string, soundtrackTitle: string, soundtrackLinkUrl: string): Promise<boolean> {
+    if (!this.supabase || this.currentRole() !== 'owner') {
+      this.errorMessage.set('Only the owner account can edit photo music.');
+      return false;
+    }
+
+    this.busy.set(true);
+    this.errorMessage.set('');
+
+    try {
+      const { error: updateError } = await this.supabase
+        .from('gallery_photos')
+        .update({
+          soundtrack_title: soundtrackTitle.trim(),
+          soundtrack_link_url: soundtrackLinkUrl.trim() || null
+        })
+        .eq('id', photoId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      await this.loadPhotos();
+      return true;
+    } catch (error) {
+      const details = error instanceof Error ? error.message : 'Music update failed.';
       this.errorMessage.set(this.formatAuthError(details));
       return false;
     } finally {
@@ -369,11 +413,7 @@ export class LoveVaultService {
       return;
     }
 
-    const { data, error } = await this.supabase
-      .from('gallery_photos')
-      .select('id, file_name, caption, created_at, storage_path')
-      .order('created_at', { ascending: false })
-      .returns<GalleryPhotoRow[]>();
+    const { data, error } = await this.loadPhotoRows();
 
     if (error) {
       this.errorMessage.set(error.message);
@@ -388,11 +428,52 @@ export class LoveVaultService {
         fileName: row.file_name,
         id: row.id,
         src: await this.createSignedUrl(row.storage_path),
-        storagePath: row.storage_path
+        storagePath: row.storage_path,
+        soundtrackTitle: row.soundtrack_title ?? '',
+        soundtrackLinkUrl: row.soundtrack_link_url ?? ''
       }))
     );
 
     this.photos.set(photos.filter((photo) => !!photo.src));
+  }
+
+  private async loadPhotoRows(): Promise<{ data: GalleryPhotoRow[] | null; error: { message: string } | null }> {
+    if (!this.supabase) {
+      return { data: null, error: null };
+    }
+
+    const richQuery = await this.supabase
+      .from('gallery_photos')
+      .select('id, file_name, caption, created_at, storage_path, soundtrack_title, soundtrack_link_url')
+      .order('created_at', { ascending: false })
+      .returns<GalleryPhotoRow[]>();
+
+    if (!richQuery.error) {
+      return richQuery;
+    }
+
+    if (!this.looksLikeMissingMusicColumnError(richQuery.error.message)) {
+      return richQuery;
+    }
+
+    const legacyQuery = await this.supabase
+      .from('gallery_photos')
+      .select('id, file_name, caption, created_at, storage_path')
+      .order('created_at', { ascending: false })
+      .returns<GalleryPhotoRow[]>();
+
+    if (legacyQuery.data) {
+      return {
+        data: legacyQuery.data.map((row) => ({
+          ...row,
+          soundtrack_title: '',
+          soundtrack_link_url: null
+        })),
+        error: legacyQuery.error
+      };
+    }
+
+    return legacyQuery;
   }
 
   private async createSignedUrl(storagePath: string): Promise<string> {
@@ -417,6 +498,10 @@ export class LoveVaultService {
 
   private looksLikeImage(fileName: string, mimeType: string): boolean {
     return looksLikeImageFile(fileName, mimeType);
+  }
+
+  private looksLikeMissingMusicColumnError(message: string): boolean {
+    return /soundtrack_title|soundtrack_link_url|column .*does not exist/i.test(message);
   }
 
   private getFileExtension(fileName: string, mimeType: string): string {

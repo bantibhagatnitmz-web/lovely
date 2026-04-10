@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Component, HostListener, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FsLightbox } from 'fslightbox-angular/16-19';
 import { AccessRole, GalleryPhoto, LoveVaultService, UploadPhotoInput } from './love-vault.service';
 import { looksLikeImageFile, normalizePhotoBlob } from './photo-normalizer';
 
@@ -11,16 +11,25 @@ interface SelectedUploadPreview {
   previewSrc: string | null;
   upload: UploadPhotoInput;
   wasHeicConverted: boolean;
+  soundtrackTitle: string;
+  soundtrackLinkUrl: string;
+}
+
+interface SoundtrackOption {
+  title: string;
+  film: string;
+  url: string;
 }
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule, FsLightbox],
+  imports: [CommonModule, FormsModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnDestroy {
   readonly vault = inject(LoveVaultService);
+  private readonly sanitizer = inject(DomSanitizer);
   readonly authMode = signal<'sign-in' | 'sign-up'>('sign-in');
   readonly feedback = signal<{ text: string; tone: 'error' | 'info' | 'success' } | null>(null);
   readonly currentUser = computed(() => this.vault.currentUser());
@@ -28,12 +37,28 @@ export class AppComponent implements OnDestroy {
   readonly isOwner = computed(() => this.currentRole() === 'owner');
   readonly photos = computed(() => this.vault.photos());
   readonly totalPhotos = computed(() => this.photos().length);
+  readonly soundtrackOptions: SoundtrackOption[] = [
+    { title: 'Tum Mile', film: 'Tum Mile', url: 'https://www.youtube.com/watch?v=odVptmgIcD0' },
+    { title: 'Dil Ibaadat', film: 'Tum Mile', url: 'https://www.youtube.com/watch?v=d1h2xiBKVqE' },
+    { title: 'Tu Hi Haqeeqat', film: 'Tum Mile', url: 'https://www.youtube.com/watch?v=7RZJCLb4g9A' },
+    { title: 'Phir Mohabbat', film: 'Murder 2', url: 'https://www.youtube.com/watch?v=LC8Lln7-glM' },
+    { title: 'Pee Loon', film: 'Once Upon a Time in Mumbaai', url: 'https://www.youtube.com/watch?v=D8XFTglfSMg' },
+    { title: 'Teri Jhuki Nazar', film: 'Murder 3', url: 'https://www.youtube.com/watch?v=tGPhqvghCiQ' },
+    { title: 'Zara Sa', film: 'Jannat', url: 'https://www.youtube.com/watch?v=As92mKxO3E4' }
+  ];
   readonly preparingUploads = signal(false);
   readonly savingUploads = signal(false);
   readonly selectedPhotoId = signal<string | null>(null);
+  readonly editingMusicPhotoId = signal<string | null>(null);
+  readonly musicPlayerDragging = signal(false);
   readonly selectedPhoto = computed(
     () => {
       return this.photos().find((photo) => photo.id === this.selectedPhotoId()) ?? null;
+    }
+  );
+  readonly editingMusicPhoto = computed(
+    () => {
+      return this.photos().find((photo) => photo.id === this.editingMusicPhotoId()) ?? null;
     }
   );
 
@@ -41,18 +66,20 @@ export class AppComponent implements OnDestroy {
   email = '';
   password = '';
   photoCaption = '';
+  soundtrackTitle = this.soundtrackOptions[0].title;
+  soundtrackLink = '';
+  editMusicTitle = this.soundtrackOptions[0].title;
+  editMusicLink = '';
   selectedUploads: SelectedUploadPreview[] = [];
 
-  // Add lightbox state for fslightbox-angular
-  lightboxOpen = false;
-  selectedPhotoIndex = 1;
   private previousBodyOverflow: string | null = null;
-  private previousBodyPosition: string | null = null;
-  private previousBodyTop: string | null = null;
-  private previousScrollY: number | null = null;
-  readonly handleLightboxClose = (): void => {
-    this.closePhoto();
-  };
+  private previousHtmlOverflow: string | null = null;
+  private readonly youtubeEmbedUrlCache = new Map<string, SafeResourceUrl>();
+  private musicPlayerPointerId: number | null = null;
+  private musicDragOffsetX = 0;
+  private musicDragOffsetY = 0;
+  musicPlayerX = 0;
+  musicPlayerY = 0;
 
   ngOnDestroy(): void {
     this.clearSelectedUploads();
@@ -133,6 +160,7 @@ export class AppComponent implements OnDestroy {
   async signOut(): Promise<void> {
     this.closePhoto();
     this.clearSelectedUploads();
+    this.clearSoundtrackSelection();
     await this.vault.signOut();
     this.feedback.set({
       text: 'Signed out of the gallery.',
@@ -216,7 +244,11 @@ export class AppComponent implements OnDestroy {
 
     try {
       const saved = await this.vault.saveFiles(
-        this.selectedUploads.map((entry) => entry.upload),
+        this.selectedUploads.map((entry) => ({
+          ...entry.upload,
+          soundtrackTitle: entry.soundtrackTitle,
+          soundtrackLinkUrl: entry.soundtrackLinkUrl
+        })),
         this.photoCaption
       );
 
@@ -265,6 +297,49 @@ export class AppComponent implements OnDestroy {
     });
   }
 
+  openMusicEditor(photo: GalleryPhoto): void {
+    if (!this.isOwner()) {
+      return;
+    }
+
+    this.editingMusicPhotoId.set(photo.id);
+    this.editMusicTitle = this.getSoundtrackTitle(photo);
+    this.editMusicLink = photo.soundtrackLinkUrl?.trim() || this.getDefaultSoundtrackUrl(photo);
+  }
+
+  closeMusicEditor(): void {
+    this.editingMusicPhotoId.set(null);
+  }
+
+  async saveMusicEditor(): Promise<void> {
+    const photoId = this.editingMusicPhotoId();
+    const photo = photoId ? this.photos().find((item) => item.id === photoId) ?? null : null;
+
+    if (!photo) {
+      this.feedback.set({
+        text: 'Choose a photo first.',
+        tone: 'error'
+      });
+      return;
+    }
+
+    const updated = await this.vault.updatePhotoMusic(photo.id, this.editMusicTitle, this.editMusicLink);
+
+    if (!updated) {
+      this.feedback.set({
+        text: this.vault.errorMessage() || 'I could not update the music.',
+        tone: 'error'
+      });
+      return;
+    }
+
+    this.closeMusicEditor();
+    this.feedback.set({
+      text: 'Music updated for that memory.',
+      tone: 'success'
+    });
+  }
+
   resetPickerValue(event: Event): void {
     const input = event.target as HTMLInputElement | null;
 
@@ -274,41 +349,36 @@ export class AppComponent implements OnDestroy {
   }
 
   openPhoto(id: string): void {
-    const index = this.photos().findIndex((photo) => photo.id === id);
-    if (index !== -1) {
-      this.selectedPhotoId.set(id);
-      this.selectedPhotoIndex = index + 1; // fslightbox is 1-based
-      this.lightboxOpen = false;
-      queueMicrotask(() => {
-        this.lightboxOpen = true;
-      });
-      // Lock scroll (full lock)
-      this.previousBodyOverflow = document.body.style.overflow;
-      this.previousBodyPosition = document.body.style.position;
-      this.previousBodyTop = document.body.style.top;
-      this.previousScrollY = window.scrollY;
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${window.scrollY}px`;
-      document.body.style.width = '100%';
+    if (!this.photos().some((photo) => photo.id === id)) {
+      return;
     }
+
+    this.selectedPhotoId.set(id);
+    this.resetMusicPlayerPosition();
+    this.previousBodyOverflow = document.body.style.overflow;
+    this.previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
   }
 
   closePhoto(): void {
-    this.lightboxOpen = false;
+    if (this.selectedPhotoId() === null && this.previousBodyOverflow === null) {
+      return;
+    }
+
+    this.stopMusicDrag();
     this.selectedPhotoId.set(null);
-    // Restore scroll
+
     if (this.previousBodyOverflow !== null) {
       document.body.style.overflow = this.previousBodyOverflow;
-      document.body.style.position = this.previousBodyPosition || '';
-      document.body.style.top = this.previousBodyTop || '';
-      document.body.style.width = '';
-      window.scrollTo(0, this.previousScrollY || 0);
+      document.documentElement.style.overflow = this.previousHtmlOverflow || '';
       this.previousBodyOverflow = null;
-      this.previousBodyPosition = null;
-      this.previousBodyTop = null;
-      this.previousScrollY = null;
+      this.previousHtmlOverflow = null;
     }
+  }
+
+  trackByPhotoId(_index: number, photo: GalleryPhoto): string {
+    return photo.id;
   }
 
   private romanticCaptions = [
@@ -359,7 +429,6 @@ export class AppComponent implements OnDestroy {
     if (dbCaption) {
       return dbCaption;
     }
-    // Use photo ID or index to consistently assign romantic captions
     const photoId = photo.id;
     const hashCode = photoId.split('').reduce((acc, char) => {
       return ((acc << 5) - acc) + char.charCodeAt(0);
@@ -374,6 +443,8 @@ export class AppComponent implements OnDestroy {
 
   private async prepareUploadPreview(file: File): Promise<SelectedUploadPreview> {
     const previewId = crypto.randomUUID();
+    const soundtrackTitle = this.getDefaultSoundtrackTitle(previewId);
+    const soundtrackLinkUrl = '';
 
     if (this.looksLikeHeic(file)) {
       const prepared = await normalizePhotoBlob(file, file.name, { optimize: false });
@@ -384,9 +455,13 @@ export class AppComponent implements OnDestroy {
         previewSrc: URL.createObjectURL(prepared.blob),
         upload: {
           blob: file,
-          fileName: file.name
+          fileName: file.name,
+          soundtrackTitle,
+          soundtrackLinkUrl
         },
-        wasHeicConverted: prepared.wasHeicConverted
+        wasHeicConverted: prepared.wasHeicConverted,
+        soundtrackTitle,
+        soundtrackLinkUrl
       };
     }
 
@@ -396,14 +471,189 @@ export class AppComponent implements OnDestroy {
       previewSrc: URL.createObjectURL(file),
       upload: {
         blob: file,
-        fileName: file.name
+        fileName: file.name,
+        soundtrackTitle,
+        soundtrackLinkUrl
       },
-      wasHeicConverted: false
+      wasHeicConverted: false,
+      soundtrackTitle,
+      soundtrackLinkUrl
     };
   }
 
   private looksLikeHeic(file: File): boolean {
     return /(\.heic|\.heif)$/i.test(file.name) || /image\/hei(c|f)/i.test(file.type);
+  }
+
+  onSoundtrackTitleChange(title: string): void {
+    this.soundtrackTitle = title;
+  }
+
+  onSoundtrackLinkChange(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    this.soundtrackLink = input?.value.trim() ?? '';
+  }
+
+  private clearSoundtrackSelection(): void {
+    this.soundtrackTitle = this.soundtrackOptions[0].title;
+    this.soundtrackLink = '';
+    this.editMusicTitle = this.soundtrackOptions[0].title;
+    this.editMusicLink = '';
+  }
+
+  getSoundtrackTitle(photo: GalleryPhoto): string {
+    if (photo.soundtrackTitle?.trim()) {
+      return photo.soundtrackTitle.trim();
+    }
+
+    const index = this.getSoundtrackIndex(photo.id);
+    return this.soundtrackOptions[index].title;
+  }
+
+  getSoundtrackUrl(photo: GalleryPhoto): string {
+    return photo.soundtrackLinkUrl?.trim() || this.getDefaultSoundtrackUrl(photo);
+  }
+
+  isAudioLink(source: string): boolean {
+    return /\.(mp3|m4a|aac|wav|ogg|flac)(\?|#|$)/i.test(source);
+  }
+
+  isYouTubeLink(source: string): boolean {
+    return !!this.extractYouTubeVideoId(source);
+  }
+
+  getYouTubeEmbedUrl(source: string): SafeResourceUrl | null {
+    const videoId = this.extractYouTubeVideoId(source);
+
+    if (!videoId) {
+      return null;
+    }
+
+    const cachedUrl = this.youtubeEmbedUrlCache.get(videoId);
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+
+    const safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+      `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&rel=0&modestbranding=1&playsinline=1&controls=0&iv_load_policy=3&fs=0&disablekb=1`
+    );
+    this.youtubeEmbedUrlCache.set(videoId, safeUrl);
+    return safeUrl;
+  }
+
+  private getDefaultSoundtrackTitle(seed: string): string {
+    const index = this.getSoundtrackIndex(seed);
+    return this.soundtrackOptions[index].title;
+  }
+
+  private getDefaultSoundtrackUrl(photo: GalleryPhoto): string {
+    const index = this.getSoundtrackIndex(photo.id);
+    return this.soundtrackOptions[index].url;
+  }
+
+  private getSoundtrackIndex(seed: string): number {
+    const hashCode = seed.split('').reduce((acc, char) => {
+      return ((acc << 5) - acc) + char.charCodeAt(0);
+    }, 0);
+
+    return Math.abs(hashCode) % this.soundtrackOptions.length;
+  }
+
+  private extractYouTubeVideoId(source: string): string | null {
+    const trimmed = source.trim();
+
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      const parsedUrl = new URL(trimmed);
+      const host = parsedUrl.hostname.replace(/^www\./i, '');
+
+      if (host === 'youtu.be') {
+        const id = parsedUrl.pathname.split('/').filter(Boolean)[0];
+        return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+      }
+
+      if (host.endsWith('youtube.com')) {
+        const embedId = parsedUrl.pathname.match(/\/embed\/([A-Za-z0-9_-]{11})/i)?.[1];
+        if (embedId) {
+          return embedId;
+        }
+
+        const watchId = parsedUrl.searchParams.get('v');
+        return watchId && /^[A-Za-z0-9_-]{11}$/.test(watchId) ? watchId : null;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
+
+  startMusicDrag(event: PointerEvent, rail: HTMLElement): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.musicPlayerDragging.set(true);
+    this.musicPlayerPointerId = event.pointerId;
+
+    const handle = event.currentTarget as HTMLElement | null;
+    handle?.setPointerCapture(event.pointerId);
+
+    const rect = rail.getBoundingClientRect();
+    this.musicDragOffsetX = event.clientX - this.musicPlayerX;
+    this.musicDragOffsetY = event.clientY - this.musicPlayerY;
+
+    if (!rect.width || !rect.height) {
+      this.musicPlayerX = event.clientX;
+      this.musicPlayerY = event.clientY;
+      return;
+    }
+
+    this.musicPlayerX = this.clampMusicPlayerCoordinate(
+      event.clientX - this.musicDragOffsetX,
+      rect.width / 2,
+      window.innerWidth
+    );
+    this.musicPlayerY = this.clampMusicPlayerCoordinate(
+      event.clientY - this.musicDragOffsetY,
+      rect.height / 2,
+      window.innerHeight
+    );
+  }
+
+  @HostListener('window:pointermove', ['$event'])
+  onWindowPointerMove(event: PointerEvent): void {
+    if (!this.musicPlayerDragging() || this.musicPlayerPointerId !== event.pointerId) {
+      return;
+    }
+
+    const rail = document.querySelector<HTMLElement>('.music-rail-modal');
+    const rect = rail?.getBoundingClientRect();
+    const halfWidth = rect?.width ? rect.width / 2 : 280;
+    const halfHeight = rect?.height ? rect.height / 2 : 160;
+
+    this.musicPlayerX = this.clampMusicPlayerCoordinate(
+      event.clientX - this.musicDragOffsetX,
+      halfWidth,
+      window.innerWidth
+    );
+    this.musicPlayerY = this.clampMusicPlayerCoordinate(
+      event.clientY - this.musicDragOffsetY,
+      halfHeight,
+      window.innerHeight
+    );
+  }
+
+  @HostListener('window:pointerup', ['$event'])
+  @HostListener('window:pointercancel', ['$event'])
+  onWindowPointerEnd(event: PointerEvent): void {
+    if (this.musicPlayerPointerId !== event.pointerId) {
+      return;
+    }
+
+    this.stopMusicDrag();
   }
 
   private clearSelectedUploads(): void {
@@ -414,6 +664,29 @@ export class AppComponent implements OnDestroy {
     }
 
     this.selectedUploads = [];
+  }
+
+  private clearYoutubeCache(): void {
+    this.youtubeEmbedUrlCache.clear();
+  }
+
+  private stopMusicDrag(): void {
+    this.musicPlayerDragging.set(false);
+    this.musicPlayerPointerId = null;
+  }
+
+  private resetMusicPlayerPosition(): void {
+    this.musicPlayerDragging.set(false);
+    this.musicPlayerPointerId = null;
+    this.musicPlayerX = Math.round(window.innerWidth / 2);
+    this.musicPlayerY = Math.round(window.innerHeight * 0.82);
+  }
+
+  private clampMusicPlayerCoordinate(value: number, halfSize: number, viewportSize: number): number {
+    const margin = 16;
+    const min = halfSize + margin;
+    const max = Math.max(min, viewportSize - halfSize - margin);
+    return Math.min(Math.max(value, min), max);
   }
 
   isMobile(): boolean {

@@ -11,8 +11,14 @@ create table if not exists public.gallery_photos (
   file_name text not null,
   caption text not null default '',
   storage_path text not null unique,
+  soundtrack_title text not null default '',
+  soundtrack_link_url text,
   created_at timestamptz not null default now()
 );
+
+alter table public.gallery_photos
+  add column if not exists soundtrack_title text not null default '',
+  add column if not exists soundtrack_link_url text;
 
 alter table public.gallery_members enable row level security;
 alter table public.gallery_photos enable row level security;
@@ -55,6 +61,14 @@ on public.gallery_photos
 for delete
 to authenticated
 using (public.current_gallery_role() = 'owner');
+
+drop policy if exists "owners_can_update_photos" on public.gallery_photos;
+create policy "owners_can_update_photos"
+on public.gallery_photos
+for update
+to authenticated
+using (public.current_gallery_role() = 'owner')
+with check (public.current_gallery_role() = 'owner');
 
 insert into storage.buckets (id, name, public)
 values ('ankita-private-gallery', 'ankita-private-gallery', false)
