@@ -51,6 +51,8 @@ export class AppComponent implements OnDestroy {
   readonly selectedPhotoId = signal<string | null>(null);
   readonly editingMusicPhotoId = signal<string | null>(null);
   readonly musicPlayerDragging = signal(false);
+  readonly showPassword = signal(false);
+  readonly showConfirmPassword = signal(false);
   readonly selectedPhoto = computed(
     () => {
       return this.photos().find((photo) => photo.id === this.selectedPhotoId()) ?? null;
@@ -89,6 +91,8 @@ export class AppComponent implements OnDestroy {
     this.authMode.set(mode);
     this.password = '';
     this.confirmPassword = '';
+    this.showPassword.set(false);
+    this.showConfirmPassword.set(false);
     this.feedback.set(null);
   }
 
@@ -114,6 +118,8 @@ export class AppComponent implements OnDestroy {
 
     this.password = '';
     this.confirmPassword = '';
+    this.showPassword.set(false);
+    this.showConfirmPassword.set(false);
     this.feedback.set({
       text: 'Signed in successfully.',
       tone: 'success'
@@ -149,12 +155,23 @@ export class AppComponent implements OnDestroy {
 
     this.password = '';
     this.confirmPassword = '';
+    this.showPassword.set(false);
+    this.showConfirmPassword.set(false);
     this.feedback.set({
       text: result.requiresEmailConfirmation
         ? 'Account created. Confirm the email, then sign in.'
         : 'Account created and signed in.',
       tone: 'success'
     });
+  }
+
+  togglePasswordVisibility(field: 'password' | 'confirm'): void {
+    if (field === 'password') {
+      this.showPassword.update((value) => !value);
+      return;
+    }
+
+    this.showConfirmPassword.update((value) => !value);
   }
 
   async signOut(): Promise<void> {
